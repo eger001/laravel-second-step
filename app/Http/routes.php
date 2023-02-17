@@ -21,8 +21,13 @@ Route::auth();
 
 Route::get('/home', 'HomeController@index');
 
-Route::resource('task', 'TaskController', [
-    'except' => [
-        'show',
-    ],
-]);
+Route::group(['middleware'=>'auth'], function ()
+{
+    Route::resource('task', 'TaskController', [
+        'except' => [
+            'show',
+        ],
+    ]);
+});
+
+
