@@ -2,12 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Auth\AuthController;
+use App\Models\Task;
 use Illuminate\Http\Request;
 
 use App\Http\Requests;
+use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -15,7 +24,13 @@ class TaskController extends Controller
      */
     public function index()
     {
-        //
+        $user = Auth::user();
+        $tasks = $user->tasks()
+            ->orderBy('created_at', 'desc')
+            ->get();
+        return view('task.index', [
+            'tasks'=>$tasks,
+        ]);
     }
 
     /**
@@ -25,7 +40,7 @@ class TaskController extends Controller
      */
     public function create()
     {
-        //
+        return view('task.create');
     }
 
     /**
@@ -36,7 +51,16 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $this->validate($request, [
+            'name'=>'required|max:255',
+        ]);
+        $user = Auth::user();
+        $user->tasks()
+            ->create([
+                'name'=>$request->name,
+            ]);
+        return redirect()
+            ->route('task.index');
     }
 
 
@@ -46,31 +70,44 @@ class TaskController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Task $task)
     {
-        //
+        $this->authorize('edit', $task);
+        return view('task.edit', ['task'=>$task]);
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  Task  $task
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Task $task)
     {
-        //
+        $this->authorize('update', $task);
+        $this->validate($request, [
+            'name'=>'required|max:255',
+        ]);
+        $user = Auth::user();
+        $user->tasks()
+            ->find($task->id);
+        $task->name = $request->name;
+        $task->save();
+        return redirect()
+            ->route('task.index');
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  Task  $task
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Task $task)
     {
-        //
+        $this->authorize('destroy', $task);
+        $task->delete();
+        return redirect()->route('task.index');
     }
 }
